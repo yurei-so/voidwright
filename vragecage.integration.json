@@ -1,0 +1,7 @@
+{
+  "schema": "vragecage.mod-contract.v1",
+  "expected_log_markers": [
+    "Voidwright: observation probe loaded; control adapters are inactive."
+  ],
+  "observation_prefix": "Voidwright evidence: "
+}

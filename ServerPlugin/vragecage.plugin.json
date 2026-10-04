@@ -1,0 +1,6 @@
+{
+  "schema": "vragecage.plugin-contract.v1",
+  "expected_log_markers": [
+    "Voidwright server plugin: destructive-lab authority verified; actuator inactive."
+  ]
+}

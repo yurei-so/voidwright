@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CubeBlocks>
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id><TypeId>UpgradeModule</TypeId><SubtypeId>VoidwrightNavigationControllerSmall</SubtypeId></Id>
+      <Public>true</Public><GuiVisible>true</GuiVisible><DisplayName>Voidwright Navigation Controller</DisplayName>
+      <Description>Vehicle-aware navigation computer. Absorbs intent from vanilla AI providers without granting them movement authority.</Description>
+      <CubeSize>Small</CubeSize><BlockTopology>TriangleMesh</BlockTopology><Size x="1" y="1" z="1" />
+      <Model>Models\Cubes\Small\EventController.mwm</Model><ModelOffset x="0" y="0" z="0" />
+      <Components><Component Subtype="InteriorPlate" Count="2" /><Component Subtype="Computer" Count="2" /><Component Subtype="Display" Count="1" /></Components>
+      <CriticalComponent Subtype="Display" Index="0" /><BlockPairName>VoidwrightNavigationController</BlockPairName>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup><Upgrades /><PCU>1</PCU><IsAirTight>false</IsAirTight>
+    </Definition>
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id><TypeId>UpgradeModule</TypeId><SubtypeId>VoidwrightNavigationControllerLarge</SubtypeId></Id>
+      <Public>true</Public><GuiVisible>true</GuiVisible><DisplayName>Voidwright Navigation Controller</DisplayName>
+      <Description>Vehicle-aware navigation computer. Absorbs intent from vanilla AI providers without granting them movement authority.</Description>
+      <CubeSize>Large</CubeSize><BlockTopology>TriangleMesh</BlockTopology><Size x="1" y="1" z="1" />
+      <Model>Models\Cubes\Large\EventController.mwm</Model><ModelOffset x="0" y="0" z="0" />
+      <Components><Component Subtype="InteriorPlate" Count="10" /><Component Subtype="Computer" Count="10" /><Component Subtype="Display" Count="4" /></Components>
+      <CriticalComponent Subtype="Display" Index="0" /><BlockPairName>VoidwrightNavigationController</BlockPairName>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup><Upgrades /><PCU>1</PCU><IsAirTight>true</IsAirTight>
+    </Definition>
+  </CubeBlocks>
+</Definitions>

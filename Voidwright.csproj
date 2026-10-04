@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputPath>bin/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>Voidwright</AssemblyName>
+    <LangVersion>7.3</LangVersion>
+    <SpaceEngineersBin64 Condition="'$(SpaceEngineersBin64)' == ''">References</SpaceEngineersBin64>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Sandbox.Game" HintPath="$(SpaceEngineersBin64)/Sandbox.Game.dll" Private="false" />
+    <Reference Include="Sandbox.Common" HintPath="$(SpaceEngineersBin64)/Sandbox.Common.dll" Private="false" />
+    <Reference Include="SpaceEngineers.Game" HintPath="$(SpaceEngineersBin64)/SpaceEngineers.Game.dll" Private="false" />
+    <Reference Include="SpaceEngineers.ObjectBuilders" HintPath="$(SpaceEngineersBin64)/SpaceEngineers.ObjectBuilders.dll" Private="false" />
+    <Reference Include="VRage.Game" HintPath="$(SpaceEngineersBin64)/VRage.Game.dll" Private="false" />
+    <Reference Include="VRage" HintPath="$(SpaceEngineersBin64)/VRage.dll" Private="false" />
+    <Reference Include="VRage.Library" HintPath="$(SpaceEngineersBin64)/VRage.Library.dll" Private="false" />
+    <Reference Include="VRage.Math" HintPath="$(SpaceEngineersBin64)/VRage.Math.dll" Private="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Data/Scripts/Voidwright/**/*.cs" />
+  </ItemGroup>
+</Project>

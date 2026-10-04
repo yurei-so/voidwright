@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PluginData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
+  <Id>voidwright-server-plugin</Id>
+  <FriendlyName>Voidwright Server Plugin</FriendlyName>
+  <Author>Runtime Roost</Author>
+  <Description>Disposable-lab actuator bridge for VRageCage integration tests.</Description>
+  <Runtimes>CoreCLR</Runtimes>
+  <Platforms>Linux</Platforms>
+</PluginData>
