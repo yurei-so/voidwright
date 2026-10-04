@@ -15,6 +15,7 @@ namespace Voidwright
         private readonly Dictionary<long, string> observedSignatures = new Dictionary<long, string>();
         private readonly Dictionary<long, string> controllerSignatures = new Dictionary<long, string>();
         private int updateCountdown = 100;
+        private bool roleLogged;
 
         public override void LoadData()
         {
@@ -31,7 +32,24 @@ namespace Voidwright
             updateCountdown--;
             if (updateCountdown > 0) return;
             updateCountdown = 100;
-            if (probe == null || MyAPIGateway.Multiplayer == null || !MyAPIGateway.Multiplayer.IsServer)
+            if (probe == null)
+                return;
+
+            var dedicated = MyAPIGateway.Utilities != null && MyAPIGateway.Utilities.IsDedicated;
+            var multiplayerAvailable = MyAPIGateway.Multiplayer != null;
+            var multiplayerServer = multiplayerAvailable && MyAPIGateway.Multiplayer.IsServer;
+            if (!roleLogged)
+            {
+                roleLogged = true;
+                MyLog.Default.WriteLineAndConsole(
+                    "Voidwright probe role: dedicated=" + dedicated +
+                    " multiplayerAvailable=" + multiplayerAvailable +
+                    " multiplayerServer=" + multiplayerServer);
+            }
+            // Dedicated hosts may expose Multiplayer late or not at all under the
+            // headless loader. Observation is read-only, so either trustworthy
+            // server signal is sufficient; clients still remain excluded.
+            if (!dedicated && !multiplayerServer)
                 return;
 
             var current = new HashSet<long>();

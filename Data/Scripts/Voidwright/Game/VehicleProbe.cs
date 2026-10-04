@@ -4,6 +4,7 @@ using Sandbox.ModAPI;
 using Voidwright.Core;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Voidwright.Game
@@ -46,6 +47,7 @@ namespace Voidwright.Game
     {
         public const string OptInMarker = "[Voidwright]";
         public const string ArmedMarker = "[Voidwright:Armed]";
+        private bool inventoryLogged;
 
         public List<VehicleProbeSnapshot> ObserveOptedInVehicles()
         {
@@ -55,6 +57,7 @@ namespace Voidwright.Game
             var entities = new HashSet<IMyEntity>();
             MyAPIGateway.Entities.GetEntities(entities, entity => entity is IMyCubeGrid);
             var seenControllers = new HashSet<long>();
+            var controllerInventory = new List<string>();
 
             foreach (var entity in entities)
             {
@@ -63,13 +66,25 @@ namespace Voidwright.Game
                 var controllers = grid.GetFatBlocks<IMyRemoteControl>();
                 foreach (var controller in controllers)
                 {
+                    if (!inventoryLogged && controller != null)
+                        controllerInventory.Add(controller.EntityId + " custom='" + controller.CustomName +
+                                                "' entity='" + controller.Name +
+                                                "' grid='" + controller.CubeGrid.DisplayName + "'");
                     if (controller == null || controller.MarkedForClose ||
-                        controller.CustomName == null ||
-                        !IsOptedIn(controller.CustomName) ||
+                        (!IsOptedIn(controller.CustomName) && !IsOptedIn(controller.Name) &&
+                         !IsOptedIn(controller.CubeGrid.DisplayName)) ||
                         !seenControllers.Add(controller.EntityId))
                         continue;
                     snapshots.Add(Observe(controller));
                 }
+            }
+            if (!inventoryLogged)
+            {
+                inventoryLogged = true;
+                MyLog.Default.WriteLineAndConsole(
+                    "Voidwright probe inventory: cubeGrids=" + entities.Count +
+                    " remoteControls=" + controllerInventory.Count +
+                    " controllers=[" + string.Join(",", controllerInventory) + "]");
             }
             return snapshots;
         }
@@ -109,7 +124,9 @@ namespace Voidwright.Game
             {
                 Controller = controller,
                 ControllerId = controller.EntityId,
-                ControllerName = controller.CustomName,
+                ControllerName = IsOptedIn(controller.CustomName) ? controller.CustomName :
+                                 IsOptedIn(controller.CubeGrid.DisplayName) ? controller.CubeGrid.DisplayName :
+                                 controller.Name,
                 Mobility = MobilityClassifier.Classify(wheels, thrusters),
                 GridCount = grids.Count,
                 BlockCount = blocks,
