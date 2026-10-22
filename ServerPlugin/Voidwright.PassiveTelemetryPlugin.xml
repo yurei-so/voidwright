@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PluginData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
+  <Id>voidwright-passive-telemetry</Id>
+  <FriendlyName>Voidwright Passive Driving Lab Telemetry</FriendlyName>
+  <Author>Runtime Roost</Author>
+  <Description>Player-consented, read-only vehicle telemetry for an exact occupied grid.</Description>
+  <Runtimes>CoreCLR</Runtimes>
+  <Platforms>Linux</Platforms>
+</PluginData>

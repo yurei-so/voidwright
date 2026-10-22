@@ -5,6 +5,38 @@
 The session component loads, reports its version boundary, and does not take
 control. LAND/AIR planners are independently exercised by deterministic tests.
 
+## Agent Core enrollment and body snapshot (schema v1)
+
+The visible **Voidwright Agent Core** (small and large variants) is the
+enrollment anchor. Placing it identifies one body with the world-local key
+`voidwright-core:<entity-id>` (scoped to the current world) and discovers the root grid's **physical** grid
+group. Mechanical subgrids are part of the body; connector/logical neighbors
+are not silently enrolled. The core block and root grid are both identified in
+the snapshot.
+
+The read-only schema-v1 snapshot contains capture tick, core world position and
+right/up/forward axes; for each discovered physical grid it records identity,
+name, grid-size class and cell size, static state, world pose, linear velocity,
+natural gravity, and the block count. Each bounded block entry records entity ID
+when available, definition type/subtype, terminal/display name, grid coordinate
+and occupied bounds, local cardinal orientation, build/damage ratios, and
+functional/working/enabled state. It does
+not copy Custom Data or inventory contents. Limits are 64 physical grids and
+4,096 block entries; completeness is explicitly marked when either limit is
+exceeded. The terminal's Custom Info is an inspection view capped at 80 block
+rows.
+
+The mod currently surfaces this snapshot in the game's Custom Info and retains
+the latest typed snapshot in its game-side registry. It can now produce an
+optional three-profile wireframe from that retained snapshot; see
+[Agent Core wireframe query](agent-core-wireframe.md). A local stdio MCP
+adapter exposes the retained snapshot through bounded body queries and the
+optional wireframe; see [Agent Core MCP](agent-core-mcp.md). That observation
+path does not enroll or actuate a body by itself.
+The Agent Core is identity and grid discovery only. The persisted `Navigation
+armed` operator-intent setting remains separate, and neither placement nor
+enrollment grants actuation.
+
 ## Stage 1 — observation-only vehicle probe (current)
 
 Bind to an explicitly opted-in Remote Control whose name contains `[Voidwright]`.
@@ -41,10 +73,30 @@ invalid input, and non-finite input all produce neutral output. This layer has
 no game API dependency and cannot mutate a block; the game-facing actuator
 adapter remains part of Stage 3.
 
-## Stage 3 — guarded route following
+## Stage 3 — guarded route following (destructive-lab bridge only; ordinary mod adapter pending)
 
-Add mobility-specific controllers behind an explicit per-block opt-in. Preserve
-manual override, ownership/faction checks, server authority, speed limits, and
+The ordinary mod has not gained actuator authority. A separate Magnetar plugin
+can drive a copied fixture only under VRageCage's destructive-lab contract.
+The local stdio MCP adapter can submit a fixed, low-speed GPS-zone goal to a
+pinned ordinary Remote Control and same-grid depth camera in that fixture; it
+uses a reviewed plan and durable request journal, then checks correlated
+operation evidence. It stops only its owned run with fresh zero-human evidence;
+otherwise it reports review-required cleanup. The
+MCP tool delegates continuous control to the local controller and does not
+expose wheel commands. This is a development instrument, not the final
+in-game adapter. Arrival remains unproven for any trial whose terminal receipt
+does not explicitly report a verified arrival.
+
+The bounded plugin command is authorized by the destructive-lab run contract,
+not by an empty-player check. An operator may remain connected during a test;
+automatic shutdown remains separately guarded by fresh zero-human evidence.
+The lifecycle has local policy/fixture tests and SDK compilation; this is not a
+new real-engine trial.
+See [the vehicle workflow](agent-vehicle-workflow.md).
+
+Before an ordinary-save adapter is considered, design mobility-specific
+controllers behind an explicit per-block opt-in. Preserve manual override,
+ownership/faction checks where applicable, server authority, speed limits, and
 clean cancellation. Reactive collision avoidance can stop or temporarily divert
 the follower, but cannot become the primary planner.
 
@@ -58,7 +110,7 @@ Each stage requires an in-game receipt before the next gains control authority.
 
 ## Dedicated authority boundary
 
-Voidwright control belongs to its own Navigation Controller block rather than a
+Voidwright body identity belongs to its own Agent Core block rather than a
 renamed Remote Control. Small- and large-grid variants reuse Keen's non-DLC Event
 Controller models while remaining Voidwright-owned terminal blocks. The DLC-
 gated Automations programmable-block reskin is deliberately not repackaged. The
@@ -66,10 +118,11 @@ persisted `Navigation armed` setting records explicit operator intent; until the
 guarded follower stage lands, diagnostics report `authority=none` even when the
 setting is armed.
 
-The dedicated controller is the future root of destination/waypoint ownership,
-planner state and visualization, and arbitration with vanilla AI blocks. The
-renamed Remote Control path is temporary migration scaffolding and must be
-removed before the controller receives propulsion authority.
+The dedicated Agent Core is the future root of body identity and discovery.
+Destination/waypoint ownership, planner state and visualization, perception,
+and arbitration with vanilla AI blocks remain distinct concerns. The renamed
+Remote Control path is temporary migration scaffolding and must be removed
+before a control adapter receives propulsion authority.
 
 The replacement uses the stable Event Controller shell with a Voidwright-owned
 terminal surface and has no inherited movement component. Adjacent AI Basic,

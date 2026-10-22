@@ -1,7 +1,8 @@
 {
   "schema": "vragecage.mod-contract.v1",
   "expected_log_markers": [
-    "Voidwright: observation probe loaded; control adapters are inactive."
+    "Voidwright: observation loaded; Agent Core enrollment is read-only and control adapters are inactive.",
+    "Voidwright VRageCage host activation accepted; waiting for matching live preflight approval."
   ],
   "observation_prefix": "Voidwright evidence: "
 }

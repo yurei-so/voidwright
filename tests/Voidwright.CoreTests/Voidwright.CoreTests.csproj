@@ -8,5 +8,10 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="../../Data/Scripts/Voidwright/Core/**/*.cs" Link="Core/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../../ServerPlugin/DepthStartupSettlePolicy.cs" Link="ServerPlugin/DepthStartupSettlePolicy.cs" />
+    <Compile Include="../../ServerPlugin/DepthArrivalPolicy.cs" Link="ServerPlugin/DepthArrivalPolicy.cs" />
+    <Compile Include="../../ServerPlugin/PreflightRunContext.cs" Link="ServerPlugin/PreflightRunContext.cs" />
+    <Compile Include="../../ServerPlugin/MovementPreflightSnapshotStore.cs" Link="ServerPlugin/MovementPreflightSnapshotStore.cs" />
+    <Compile Include="../../ServerPlugin/DirectManeuverActuatorBroker.cs" Link="ServerPlugin/DirectManeuverActuatorBroker.cs" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,8 @@
+{
+  "schema": "vragecage.passive-telemetry-plugin.v1",
+  "permissionScope": "read_only_observation",
+  "pluginId": "voidwright-passive-telemetry",
+  "entryType": "Voidwright.ServerPlugin.DrivingLabPassiveTelemetryPlugin",
+  "capabilities": ["player-consented-passive-grid-telemetry"],
+  "deniedCapabilities": ["movement", "actuator-control", "programmable-block-script-control", "world-entity-mutation"]
+}

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Text;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using Voidwright.Core;
 
 namespace Voidwright.Game
 {
@@ -13,20 +15,45 @@ namespace Voidwright.Game
         public NavigationControllerSettings Settings;
         public string IntentProviders;
         public string WinningIntent;
+        public AgentCoreSnapshot Agent;
 
         public string Signature()
             => EntityId + ":" + GridId + ":" + Settings.Armed + ":" + Settings.MobilityMode + ":" +
-               Settings.DestinationGps + ":" + Settings.VanillaAi + ":" + IntentProviders + ":" + WinningIntent;
+               Settings.DestinationGps + ":" + Settings.VanillaAi + ":" + IntentProviders + ":" + WinningIntent + ":" +
+               (Agent == null ? "no-agent-snapshot" : Agent.StructureSignature());
     }
 
     public sealed class NavigationControllerRegistry
     {
-        public List<NavigationControllerSnapshot> Observe()
+        private readonly Dictionary<long, AgentCoreSnapshot> latestSnapshots = new Dictionary<long, AgentCoreSnapshot>();
+        private readonly Dictionary<long, IMyTerminalBlock> infoBlocks = new Dictionary<long, IMyTerminalBlock>();
+
+        public AgentCoreSnapshot GetLatestSnapshot(long coreEntityId)
+        {
+            AgentCoreSnapshot snapshot;
+            return latestSnapshots.TryGetValue(coreEntityId, out snapshot) ? snapshot : null;
+        }
+
+        /// <summary>
+        /// Performs an on-demand, read-only orthographic wireframe query against the latest
+        /// captured body snapshot. A future MCP adapter can expose this without game discovery.
+        /// </summary>
+        public AgentWireframeRenderResult QueryWireframe(
+            long coreEntityId,
+            IList<AgentWireframeSelection> selections)
+        {
+            var snapshot = GetLatestSnapshot(coreEntityId);
+            if (snapshot == null) return null;
+            return AgentWireframeRenderer.Render(AgentWireframeSnapshotFactory.Create(snapshot), selections);
+        }
+
+        public List<NavigationControllerSnapshot> Observe(long simulationTick)
         {
             var result = new List<NavigationControllerSnapshot>();
             if (MyAPIGateway.Entities == null) return result;
             var entities = new HashSet<IMyEntity>();
             MyAPIGateway.Entities.GetEntities(entities, entity => entity is IMyCubeGrid);
+            var activeCoreIds = new HashSet<long>();
             foreach (var entity in entities)
             {
                 var grid = entity as IMyCubeGrid;
@@ -34,6 +61,18 @@ namespace Voidwright.Game
                 foreach (var module in grid.GetFatBlocks<IMyUpgradeModule>())
                 {
                     if (!NavigationControllerIdentity.IsNavigationController(module)) continue;
+                    activeCoreIds.Add(module.EntityId);
+                    if (!infoBlocks.ContainsKey(module.EntityId))
+                    {
+                        module.AppendingCustomInfo += AppendAgentCustomInfo;
+                        infoBlocks[module.EntityId] = module;
+                    }
+                    var agentSnapshot = AgentCoreSnapshotBuilder.Capture(module, simulationTick);
+                    if (agentSnapshot != null)
+                    {
+                        latestSnapshots[module.EntityId] = agentSnapshot;
+                        module.SetDetailedInfoDirty();
+                    }
                     string providers;
                     string winner;
                     InspectIntentProviders(grid, out providers, out winner);
@@ -44,11 +83,44 @@ namespace Voidwright.Game
                         GridId = grid.EntityId,
                         Settings = NavigationControllerSettingsStore.Read(module),
                         IntentProviders = providers,
-                        WinningIntent = winner
+                        WinningIntent = winner,
+                        Agent = agentSnapshot
                     });
                 }
             }
+            RemoveMissingCores(activeCoreIds);
             return result;
+        }
+
+        public void Clear()
+        {
+            foreach (var block in infoBlocks.Values)
+                if (block != null) block.AppendingCustomInfo -= AppendAgentCustomInfo;
+            infoBlocks.Clear();
+            latestSnapshots.Clear();
+        }
+
+        private void AppendAgentCustomInfo(IMyTerminalBlock block, StringBuilder builder)
+        {
+            if (block == null || builder == null) return;
+            AgentCoreSnapshot snapshot;
+            if (latestSnapshots.TryGetValue(block.EntityId, out snapshot))
+                snapshot.AppendCustomInfo(builder);
+            else
+                builder.AppendLine("\nVoidwright agent enrollment is waiting for an authoritative snapshot.");
+        }
+
+        private void RemoveMissingCores(HashSet<long> activeCoreIds)
+        {
+            var removed = new List<long>();
+            foreach (var coreId in infoBlocks.Keys)
+                if (!activeCoreIds.Contains(coreId)) removed.Add(coreId);
+            foreach (var coreId in removed)
+            {
+                infoBlocks[coreId].AppendingCustomInfo -= AppendAgentCustomInfo;
+                infoBlocks.Remove(coreId);
+                latestSnapshots.Remove(coreId);
+            }
         }
 
         private static void InspectIntentProviders(IMyCubeGrid root, out string providers, out string winner)

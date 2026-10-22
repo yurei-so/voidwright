@@ -3,8 +3,8 @@
   <CubeBlocks>
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id><TypeId>UpgradeModule</TypeId><SubtypeId>VoidwrightNavigationControllerSmall</SubtypeId></Id>
-      <Public>true</Public><GuiVisible>true</GuiVisible><DisplayName>Voidwright Navigation Controller</DisplayName>
-      <Description>Vehicle-aware navigation computer. Absorbs intent from vanilla AI providers without granting them movement authority.</Description>
+      <Public>true</Public><GuiVisible>true</GuiVisible><DisplayName>Voidwright Agent Core</DisplayName>
+      <Description>Enrolls this physical grid construct as a Voidwright agent body. Reports grid identity, orientation, motion, and bounded block inventory. Observation only; grants no control authority.</Description>
       <CubeSize>Small</CubeSize><BlockTopology>TriangleMesh</BlockTopology><Size x="1" y="1" z="1" />
       <Model>Models\Cubes\Small\EventController.mwm</Model><ModelOffset x="0" y="0" z="0" />
       <Components><Component Subtype="InteriorPlate" Count="2" /><Component Subtype="Computer" Count="2" /><Component Subtype="Display" Count="1" /></Components>
@@ -13,8 +13,8 @@
     </Definition>
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id><TypeId>UpgradeModule</TypeId><SubtypeId>VoidwrightNavigationControllerLarge</SubtypeId></Id>
-      <Public>true</Public><GuiVisible>true</GuiVisible><DisplayName>Voidwright Navigation Controller</DisplayName>
-      <Description>Vehicle-aware navigation computer. Absorbs intent from vanilla AI providers without granting them movement authority.</Description>
+      <Public>true</Public><GuiVisible>true</GuiVisible><DisplayName>Voidwright Agent Core</DisplayName>
+      <Description>Enrolls this physical grid construct as a Voidwright agent body. Reports grid identity, orientation, motion, and bounded block inventory. Observation only; grants no control authority.</Description>
       <CubeSize>Large</CubeSize><BlockTopology>TriangleMesh</BlockTopology><Size x="1" y="1" z="1" />
       <Model>Models\Cubes\Large\EventController.mwm</Model><ModelOffset x="0" y="0" z="0" />
       <Components><Component Subtype="InteriorPlate" Count="10" /><Component Subtype="Computer" Count="10" /><Component Subtype="Display" Count="4" /></Components>

@@ -5,6 +5,13 @@ this particular vehicle safely get there?**
 
 ## Layers
 
+The product boundary is intentionally split into four roles: the agent chooses
+goals and decisions; the **Agent Core** enrolls a body and discovers its grid
+construct; perception turns sensors/world APIs into observations; and actuation
+is a separate, explicitly authorized capability. The current Agent Core
+implements identity and bounded grid discovery only. It does not make plans,
+read camera frames, or move the construct.
+
 1. **World observations** describe terrain, obstacles, dynamic contacts, and
    uncertainty without choosing an action.
 2. **Embodiment** describes the controlled grid's envelope and mobility limits.
@@ -19,13 +26,26 @@ this particular vehicle safely get there?**
 7. **Goals and behaviors** will eventually choose destinations and tasks without
    acquiring direct control over vehicle mechanics.
 
+## Behavior-to-actuation seam
+
+Human, NPC, vanilla-AI, and script behavior sources are future inputs to this
+boundary; none is implemented by this design note. They should converge on a
+normalized LAND movement intent before control is considered. Each intent must
+bind to the current run and exact vehicle, pass through bounded revocable
+authorization, and reach a vehicle-specific adapter that maps it to hardware
+controls. `DirectManeuverOperationLease` and the actuator broker model an
+experimental run-and-vehicle authorization seam. The server plugin keeps its
+direct dispatch closed until a shared authoritative lease and stable controller
+priority can be established. Its LAND wheel mapping remains vehicle-specific.
+A general behavior-source framework and an AIR actuator adapter are deferred.
+
 The engine-independent core implements layers 2–5 and explicitly models the handoff to layer 6.
-Game-facing actuation remains fail-closed. Live headless tests established that per-wheel public
-overrides can be accepted and read back without moving an unpiloted grid, while the internal grid
-wheel-system input that does move wheels is prohibited by the Space Engineers mod-script
-whitelist. Voidwright therefore does not pretend that either route is a working control adapter,
-and it does not fall back to vanilla AI. See [headless actuation](headless-actuation.md) for the
-evidence and the next architectural decision.
+The ordinary mod remains observation-only and fails closed. A separate Magnetar server plugin can
+apply bounded wheel-system input only inside a VRageCage destructive-lab copy; it is a privileged
+development bridge, not production mod authority. Live r4 evidence confirms wheel actuation and
+near-target route completion only at a broad tolerance, with tighter approaches timing out. Voidwright
+does not fall back to vanilla AI. See [headless actuation](headless-actuation.md) for the evidence,
+limitations, and authority boundary.
 
 ## Planner invariants
 
@@ -41,6 +61,7 @@ evidence and the next architectural decision.
 ## Deliberate omissions
 
 The first slice does not yet sample planet voxels, track dynamic grids, drive
-thrusters/wheels, or replace vanilla AI-block control. Those
-belong in game-facing adapters and require live evidence from the current Space
-Engineers API before implementation.
+thrusters, deliver precise collision-aware navigation, or replace vanilla
+AI-block control. The privileged wheel bridge is confined to disposable test
+worlds; broader vehicle support and any ordinary-save actuator require separate
+live evidence and an explicit authority design.

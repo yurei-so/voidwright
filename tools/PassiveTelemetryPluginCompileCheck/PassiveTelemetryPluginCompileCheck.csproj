@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>Voidwright.PassiveTelemetryPlugin</AssemblyName>
+    <LangVersion>7.3</LangVersion>
+    <MagnetarPluginSdk Condition="'$(MagnetarPluginSdk)' == ''">$(MAGNETAR_PLUGIN_SDK)</MagnetarPluginSdk>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../ServerPlugin/DrivingLabPassiveTelemetryPlugin.cs" Link="ServerPlugin/DrivingLabPassiveTelemetryPlugin.cs" />
+    <Compile Include="../../ServerPlugin/PassiveTelemetryCommands.cs" Link="ServerPlugin/PassiveTelemetryCommands.cs" />
+    <Compile Include="../../ServerPlugin/DrivingLabPassiveTelemetryAdapter.cs" Link="ServerPlugin/DrivingLabPassiveTelemetryAdapter.cs" />
+    <Compile Include="../../ServerPlugin/DrivingLabPassiveTelemetryPolicy.cs" Link="ServerPlugin/DrivingLabPassiveTelemetryPolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DrivingLabConsentWire.cs" Link="Core/DrivingLabConsentWire.cs" />
+    <Reference Include="Sandbox.Game" HintPath="$(SpaceEngineersBin64)/Sandbox.Game.dll" Private="false" />
+    <Reference Include="Sandbox.Common" HintPath="$(SpaceEngineersBin64)/Sandbox.Common.dll" Private="false" />
+    <Reference Include="SpaceEngineers.Game" HintPath="$(SpaceEngineersBin64)/SpaceEngineers.Game.dll" Private="false" />
+    <Reference Include="SpaceEngineers.ObjectBuilders" HintPath="$(SpaceEngineersBin64)/SpaceEngineers.ObjectBuilders.dll" Private="false" />
+    <Reference Include="VRage.Game" HintPath="$(SpaceEngineersBin64)/VRage.Game.dll" Private="false" />
+    <Reference Include="VRage" HintPath="$(SpaceEngineersBin64)/VRage.dll" Private="false" />
+    <Reference Include="VRage.Library" HintPath="$(SpaceEngineersBin64)/VRage.Library.dll" Private="false" />
+    <Reference Include="VRage.Math" HintPath="$(SpaceEngineersBin64)/VRage.Math.dll" Private="false" />
+    <Reference Include="PluginSdk" HintPath="$(MagnetarPluginSdk)" Private="false" />
+  </ItemGroup>
+  <Target Name="RequireExplicitGameSdk" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(SpaceEngineersBin64)/Sandbox.Game.dll')" Text="Pass SpaceEngineersBin64 pointing to the existing game SDK directory." />
+    <Error Condition="!Exists('$(MagnetarPluginSdk)')" Text="Pass MagnetarPluginSdk or MAGNETAR_PLUGIN_SDK pointing to the installed Magnetar PluginSdk.dll." />
+  </Target>
+</Project>

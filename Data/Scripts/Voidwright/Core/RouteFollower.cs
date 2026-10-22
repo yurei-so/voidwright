@@ -51,9 +51,14 @@ namespace Voidwright.Core
                 maximumSpeed <= 0 || arrivalRadius < 0)
                 return new GuidanceCommand(GuidanceStatus.Invalid, 0, 0, 0, 0);
 
-            var distance = Math.Sqrt((rightMeters * rightMeters) +
-                                     (upMeters * upMeters) +
-                                     (forwardMeters * forwardMeters));
+            // Ground vehicles can only close distance in the ground plane. GPS
+            // markers and recorded points may sit above/below the wheel plane,
+            // so vertical offset must not make a land arrival unreachable.
+            var groundDistance = Math.Sqrt((rightMeters * rightMeters) +
+                                           (forwardMeters * forwardMeters));
+            var distance = mobility == MobilityClass.Air
+                ? Math.Sqrt((groundDistance * groundDistance) + (upMeters * upMeters))
+                : groundDistance;
             if (distance <= arrivalRadius)
                 return new GuidanceCommand(GuidanceStatus.Arrived, 0, 0, 0, 0);
 
@@ -71,7 +76,7 @@ namespace Voidwright.Core
             var heading = Math.Atan2(rightMeters, forwardMeters);
             var yaw = Clamp(heading / (Math.PI / 2));
             var alignment = Math.Max(0, 1 - Math.Abs(yaw));
-            var approach = Math.Min(1, distance / Math.Max(arrivalRadius * 4, 1));
+            var approach = Math.Min(1, groundDistance / Math.Max(arrivalRadius * 4, 1));
             var throttle = alignment * approach * SpeedScale(forwardSpeed, maximumSpeed);
             return new GuidanceCommand(GuidanceStatus.Tracking, throttle, 0, 0, yaw);
         }

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+    <ProjectReference Include="../../AgentMcp/Voidwright.AgentMcp.csproj" />
+    <Compile Include="../../ServerPlugin/DrivingLabPassiveTelemetryPolicy.cs" Link="ServerPlugin/DrivingLabPassiveTelemetryPolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DrivingLabConsentWire.cs" Link="Core/DrivingLabConsentWire.cs" />
+  </ItemGroup>
+</Project>

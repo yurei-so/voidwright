@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>Voidwright.ServerPlugin.CompileCheck</AssemblyName>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../ServerPlugin/*.cs" Link="ServerPlugin/%(Filename)%(Extension)" />
+    <Compile Remove="../../ServerPlugin/DrivingLabPassiveTelemetryPlugin.cs" />
+    <Compile Remove="../../ServerPlugin/PassiveTelemetryCommands.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DirectManeuver.cs" Link="Core/DirectManeuver.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/LocalVehicleTestControl.cs" Link="Core/LocalVehicleTestControl.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/LocalVehicleTestObstacleStopPolicy.cs" Link="Core/LocalVehicleTestObstacleStopPolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DirectManeuverCommandAcceptancePolicy.cs" Link="Core/DirectManeuverCommandAcceptancePolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DirectManeuverExecutor.cs" Link="Core/DirectManeuverExecutor.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/WheelPropulsionMapping.cs" Link="Core/WheelPropulsionMapping.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DirectManeuverOperationLease.cs" Link="Core/DirectManeuverOperationLease.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/MovementPreflight.cs" Link="Core/MovementPreflight.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/PreflightRuntimeEvidence.cs" Link="Core/PreflightRuntimeEvidence.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DepthAvoidancePolicy.cs" Link="Core/DepthAvoidancePolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DepthGridBindingPolicy.cs" Link="Core/DepthGridBindingPolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/VehicleControllerBindingPolicy.cs" Link="Core/VehicleControllerBindingPolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/ModOwnedCommandRoutingPolicy.cs" Link="Core/ModOwnedCommandRoutingPolicy.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/DrivingLabConsentWire.cs" Link="Core/DrivingLabConsentWire.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/VoidwrightDiscoveryHandshake.cs" Link="Core/VoidwrightDiscoveryHandshake.cs" />
+    <Compile Include="../../Data/Scripts/Voidwright/Core/VoidwrightOperationCapability.cs" Link="Core/VoidwrightOperationCapability.cs" />
+    <Reference Include="Sandbox.Game" HintPath="$(SpaceEngineersBin64)/Sandbox.Game.dll" Private="false" />
+    <Reference Include="Sandbox.Common" HintPath="$(SpaceEngineersBin64)/Sandbox.Common.dll" Private="false" />
+    <Reference Include="SpaceEngineers.Game" HintPath="$(SpaceEngineersBin64)/SpaceEngineers.Game.dll" Private="false" />
+    <Reference Include="SpaceEngineers.ObjectBuilders" HintPath="$(SpaceEngineersBin64)/SpaceEngineers.ObjectBuilders.dll" Private="false" />
+    <Reference Include="VRage.Game" HintPath="$(SpaceEngineersBin64)/VRage.Game.dll" Private="false" />
+    <Reference Include="VRage" HintPath="$(SpaceEngineersBin64)/VRage.dll" Private="false" />
+    <Reference Include="VRage.Library" HintPath="$(SpaceEngineersBin64)/VRage.Library.dll" Private="false" />
+    <Reference Include="VRage.Math" HintPath="$(SpaceEngineersBin64)/VRage.Math.dll" Private="false" />
+  </ItemGroup>
+  <Target Name="RequireExplicitGameSdk" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(SpaceEngineersBin64)/Sandbox.Game.dll')" Text="Pass SpaceEngineersBin64 pointing to the existing game SDK directory. This check installs and starts nothing." />
+  </Target>
+</Project>

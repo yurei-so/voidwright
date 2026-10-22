@@ -21,8 +21,21 @@ dotnet build "$repo_dir/Voidwright.csproj" -p:SpaceEngineersBin64="$game_bin"
 dotnet run --project "$repo_dir/tests/Voidwright.CoreTests/Voidwright.CoreTests.csproj"
 
 mkdir -p "$package_dir/Data"
-rsync -a --delete "$repo_dir/Data/" "$package_dir/Data/"
+# These two files are server-side execution policy used by the Magnetar plugin
+# and offline tests. The programmable-block runtime uses C# 6, so keep them in
+# the source tree for plugin compilation but out of the in-game mod package.
+rsync -a --delete \
+  --exclude='Scripts/Voidwright/Core/DirectManeuverExecutor.cs' \
+  --exclude='Scripts/Voidwright/Core/DirectManeuverOperationLease.cs' \
+  "$repo_dir/Data/" "$package_dir/Data/"
 cp "$repo_dir/modinfo.sbmi" "$package_dir/modinfo.sbmi"
 cp "$repo_dir/vragecage.integration.json" "$package_dir/vragecage.integration.json"
+
+# Magnetar compiles the packaged in-game scripts as C# 6. Keep the exact
+# stageable source set inside that language boundary before publishing it.
+dotnet build "$repo_dir/tools/ModScriptCompileCheck/ModScriptCompileCheck.csproj" \
+  --configuration Release \
+  -p:VoidwrightModPackage="$package_dir" \
+  -p:SpaceEngineersBin64="$game_bin"
 
 echo "Voidwright package refreshed at $package_dir"

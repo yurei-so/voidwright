@@ -1,0 +1,31 @@
+{
+  "schema": "voidwright.depth-experiment-config.v1",
+  "seed": 48001,
+  "train_samples": 20000,
+  "validation_samples": 2500,
+  "test_samples": 2500,
+  "epochs": 150,
+  "batch_size": 128,
+  "resolution": [
+    32,
+    18
+  ],
+  "encoding": "numeric",
+  "loadout": "front",
+  "device": "cuda",
+  "render_backend": "cuda",
+  "training_families": [
+    "flat",
+    "slope",
+    "step",
+    "trench",
+    "wall",
+    "overhang"
+  ],
+  "supported_start": true,
+  "maximum_false_safe_rate": 0.02,
+  "maximum_permission_error": 0.02,
+  "minimum_permissions": 50,
+  "wall_seconds": 1200,
+  "model": "projected_depth"
+}

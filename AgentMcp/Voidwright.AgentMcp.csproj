@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>annotations</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+    <Compile Include="../Data/Scripts/Voidwright/Core/AgentWireframeRenderer.cs" Link="Core/AgentWireframeRenderer.cs" />
+    <Compile Include="../Data/Scripts/Voidwright/Core/VirtualCameraMarkerWire.cs" Link="Core/VirtualCameraMarkerWire.cs" />
+    <Compile Include="../Data/Scripts/Voidwright/Core/LocalVehicleTestControl.cs" Link="Core/LocalVehicleTestControl.cs" />
+  </ItemGroup>
+</Project>

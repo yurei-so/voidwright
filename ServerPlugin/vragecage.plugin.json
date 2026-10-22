@@ -1,6 +1,8 @@
 {
   "schema": "vragecage.plugin-contract.v1",
   "expected_log_markers": [
-    "Voidwright server plugin: destructive-lab authority verified; actuator inactive."
+    "Voidwright server plugin: destructive-lab authority verified; actuator inactive.",
+    "Host activation written for exact run, fixture, operation, controller, camera, and command bindings.",
+    "[VRageCage][PREFLIGHT] (10/10) Preflight success"
   ]
 }

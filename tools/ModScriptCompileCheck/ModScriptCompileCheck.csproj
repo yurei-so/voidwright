@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <LangVersion>6</LangVersion>
+    <AssemblyName>Voidwright.ModScript.CSharp6Check</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(VoidwrightModPackage)/Data/Scripts/Voidwright/**/*.cs" />
+    <Compile Remove="$(VoidwrightModPackage)/Data/Scripts/Voidwright/Core/DirectManeuverExecutor.cs" />
+    <Compile Remove="$(VoidwrightModPackage)/Data/Scripts/Voidwright/Core/DirectManeuverOperationLease.cs" />
+    <Reference Include="Sandbox.Game" HintPath="$(SpaceEngineersBin64)/Sandbox.Game.dll" Private="false" />
+    <Reference Include="Sandbox.Common" HintPath="$(SpaceEngineersBin64)/Sandbox.Common.dll" Private="false" />
+    <Reference Include="SpaceEngineers.Game" HintPath="$(SpaceEngineersBin64)/SpaceEngineers.Game.dll" Private="false" />
+    <Reference Include="VRage.Game" HintPath="$(SpaceEngineersBin64)/VRage.Game.dll" Private="false" />
+    <Reference Include="VRage" HintPath="$(SpaceEngineersBin64)/VRage.dll" Private="false" />
+    <Reference Include="VRage.Library" HintPath="$(SpaceEngineersBin64)/VRage.Library.dll" Private="false" />
+    <Reference Include="VRage.Math" HintPath="$(SpaceEngineersBin64)/VRage.Math.dll" Private="false" />
+  </ItemGroup>
+  <Target Name="RequirePackagedMod" BeforeTargets="CoreCompile">
+    <Error Condition="'$(VoidwrightModPackage)' == ''" Text="Pass VoidwrightModPackage as the package root whose in-game scripts are being checked." />
+    <Error Condition="'$(SpaceEngineersBin64)' == '' or !Exists('$(SpaceEngineersBin64)/Sandbox.Game.dll')" Text="Pass SpaceEngineersBin64 pointing to the game API assemblies." />
+  </Target>
+</Project>
