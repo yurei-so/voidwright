@@ -108,6 +108,13 @@ namespace Voidwright.ServerPlugin
         private bool discoveryBootstrapReady;
         private DateTime lastDiscoveryBootstrapRefreshUtc = DateTime.MinValue;
         private bool modActivationFailureLogged;
+        private DateTime lastStageTwoActivationAttemptUtc = DateTime.MinValue;
+        private DateTime lastModActivationAttemptUtc = DateTime.MinValue;
+        private DateTime lastModApprovalWriteAttemptUtc = DateTime.MinValue;
+        private DateTime lastModApprovalRevokeAttemptUtc = DateTime.MinValue;
+        private string lastModApprovalHeartbeatKey;
+        private bool modApprovalStateKnown;
+        private bool modApprovalFilePresent;
         private long modPreflightUpdateTicks;
         private int modPreflightElapsedTicks;
         private long lastPersistedModHeartbeatTick = long.MinValue;
@@ -3062,13 +3069,17 @@ namespace Voidwright.ServerPlugin
         private void UpdateDiscoveryBootstrap()
         {
             if (MyAPIGateway.Utilities == null || MyAPIGateway.Entities == null) return;
+            var nowUtc = DateTime.UtcNow;
             if (discoveryBootstrapReady)
             {
                 TryAcceptStageTwoActivation();
-                if (DateTime.UtcNow - lastDiscoveryBootstrapRefreshUtc < TimeSpan.FromSeconds(1)) return;
+                if (nowUtc - lastDiscoveryBootstrapRefreshUtc < TimeSpan.FromSeconds(1)) return;
                 discoveryBootstrapReady = false;
             }
-            lastDiscoveryBootstrapRefreshUtc = DateTime.UtcNow;
+            // Discovery snapshots can be large and are read, hashed, and parsed
+            // on the game update thread. Bound retries while bootstrap is waiting.
+            if (nowUtc - lastDiscoveryBootstrapRefreshUtc < TimeSpan.FromSeconds(1)) return;
+            lastDiscoveryBootstrapRefreshUtc = nowUtc;
             try
             {
                 var runId = Environment.GetEnvironmentVariable("VRAGECAGE_LAB_RUN_ID") ?? string.Empty;
@@ -3134,6 +3145,10 @@ namespace Voidwright.ServerPlugin
 
         private void TryAcceptStageTwoActivation()
         {
+            var nowUtc = DateTime.UtcNow;
+            // This method runs from IPlugin.Update; avoid per-tick file reads and hashing.
+            if (nowUtc - lastStageTwoActivationAttemptUtc < TimeSpan.FromSeconds(1)) return;
+            lastStageTwoActivationAttemptUtc = nowUtc;
             try
             {
                 var runId = Environment.GetEnvironmentVariable("VRAGECAGE_LAB_RUN_ID") ?? string.Empty;
@@ -3158,8 +3173,8 @@ namespace Voidwright.ServerPlugin
                     context.DepthCameraId != activation.CameraId || context.AgentCoreId != activation.CoreId ||
                     context.DiscoveryRunId != activation.ExporterRunId || context.DiscoveryTick != activation.Tick ||
                     context.DiscoveryFingerprint != activation.Fingerprint ||
-                    !HostDiscoveryMatches(context, activation.SessionId, activation.BootstrapNonce) ||
-                    !HostDiscoveryWheelsMatch(activation)) return;
+                    !HostDiscoveryMatches(context, activation.SessionId, activation.BootstrapNonce,
+                        activation.SuspensionIds)) return;
                 DirectManeuverPlan zeroHoldPlan;
                 if (activation.Action == "direct-maneuver" &&
                     (!DirectManeuverPlan.TryParseCompactSegments(context.DirectManeuverSegments,
@@ -3192,7 +3207,7 @@ namespace Voidwright.ServerPlugin
                 if (activation.Action == "direct-maneuver")
                     Environment.SetEnvironmentVariable("VRAGECAGE_LAB_MOTION_OWNER", "voidwright-plugin");
                 ReadCommand();
-                if (commandKind != activation.Action || !EnsureModActivation()) return;
+                if (commandKind != activation.Action || !EnsureModActivation(context, true)) return;
                 WriteStageTwoAcknowledgement(activation, "host-accepted");
                 MyLog.Default.WriteLineAndConsole("[VRageCage][DISCOVERY] Stage-two " + activation.Action + " activation accepted.");
             }
@@ -3204,37 +3219,6 @@ namespace Voidwright.ServerPlugin
                     MyLog.Default.WriteLineAndConsole("[VRageCage][DISCOVERY] Stage-two activation rejected or still pending: " + error.GetType().Name);
                 }
             }
-        }
-
-        private bool HostDiscoveryWheelsMatch(VoidwrightStageTwoActivation activation)
-        {
-            try
-            {
-                string json;
-                using (var reader = MyAPIGateway.Utilities.ReadFileInWorldStorage(
-                           "agent-core-discovery-v1.json", typeof(MySessionComponentBase))) json = reader.ReadToEnd();
-                var ids = activation.SuspensionIds.Split(',');
-                var expected = new HashSet<long>();
-                foreach (var value in ids)
-                {
-                    long id;
-                    if (!long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out id) || id <= 0 || !expected.Add(id)) return false;
-                    var pattern = "\\\"gridEntityId\\\":" + activation.GridId.ToString(CultureInfo.InvariantCulture) +
-                        ",\\\"entityId\\\":" + id.ToString(CultureInfo.InvariantCulture) +
-                        ",\\\"definitionType\\\":\\\"[^\\\"]*\\\",\\\"subtypeId\\\":\\\"[^\\\"]*\\\",\\\"typedKind\\\":\\\"suspension\\\"";
-                    if (System.Text.RegularExpressions.Regex.Matches(json, pattern).Count != 1) return false;
-                }
-                var actual = new HashSet<long>();
-                var wheelPattern = "\\\"gridEntityId\\\":" + activation.GridId.ToString(CultureInfo.InvariantCulture) +
-                    ",\\\"entityId\\\":([0-9]+),\\\"definitionType\\\":\\\"[^\\\"]*\\\",\\\"subtypeId\\\":\\\"[^\\\"]*\\\",\\\"typedKind\\\":\\\"suspension\\\"";
-                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(json, wheelPattern))
-                {
-                    long id;
-                    if (!long.TryParse(match.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out id) || id <= 0 || !actual.Add(id)) return false;
-                }
-                return expected.Count > 0 && expected.SetEquals(actual);
-            }
-            catch { return false; }
         }
 
         private void WriteStageTwoAcknowledgement(VoidwrightStageTwoActivation activation, string status)
@@ -3254,7 +3238,16 @@ namespace Voidwright.ServerPlugin
 
         private bool EnsureModActivation()
         {
+            return EnsureModActivation(null, false);
+        }
+
+        private bool EnsureModActivation(PreflightRunContext prevalidatedContext, bool discoveryWasValidated)
+        {
             if (modActivationWritten) return true;
+            var attemptUtc = DateTime.UtcNow;
+            if (prevalidatedContext == null &&
+                attemptUtc - lastModActivationAttemptUtc < TimeSpan.FromSeconds(1)) return false;
+            lastModActivationAttemptUtc = attemptUtc;
             try
             {
                 var runId = Environment.GetEnvironmentVariable("VRAGECAGE_LAB_RUN_ID") ?? string.Empty;
@@ -3262,8 +3255,8 @@ namespace Voidwright.ServerPlugin
                 var challenge = Environment.GetEnvironmentVariable("VRAGECAGE_LAB_PREFLIGHT_CHALLENGE") ?? string.Empty;
                 var contextPath = Environment.GetEnvironmentVariable("VRAGECAGE_LAB_PREFLIGHT_CONTEXT") ?? string.Empty;
                 var contextSha = Environment.GetEnvironmentVariable("VRAGECAGE_LAB_PREFLIGHT_CONTEXT_SHA256") ?? string.Empty;
-                PreflightRunContext context;
-                string reason;
+                PreflightRunContext context = prevalidatedContext;
+                string reason = null;
                 if (!VoidwrightPreflightHandshake.IsValidChallenge(challenge))
                 {
                     modHandshakeReason = "host rejected activation: launcher challenge is malformed";
@@ -3272,7 +3265,7 @@ namespace Voidwright.ServerPlugin
                 }
                 var expectedAction = commandKind == "direct-maneuver" || commandKind == "preflight-only"
                     ? commandKind : "drive-to-coordinate-depth";
-                if (!PreflightRunContext.TryLoad(contextPath, contextSha, runId, fixtureId, operationId,
+                if (context == null && !PreflightRunContext.TryLoad(contextPath, contextSha, runId, fixtureId, operationId,
                         expectedAction, out context, out reason))
                 {
                     modHandshakeReason = "host rejected activation: " + reason;
@@ -3297,7 +3290,7 @@ namespace Voidwright.ServerPlugin
                     LogModActivationFailure(modHandshakeReason);
                     return false;
                 }
-                if ((direct || preflightOnly) && !HostDiscoveryMatches(context))
+                if ((direct || preflightOnly) && !discoveryWasValidated && !HostDiscoveryMatches(context))
                 {
                 modHandshakeReason = "host rejected activation: exact Agent Core discovery is stale, cross-session, or no longer matches the pinned fixture entities";
                     LogModActivationFailure(modHandshakeReason);
@@ -3362,6 +3355,12 @@ namespace Voidwright.ServerPlugin
         private bool HostDiscoveryMatches(PreflightRunContext context, string expectedSessionId,
             string expectedBootstrapNonce)
         {
+            return HostDiscoveryMatches(context, expectedSessionId, expectedBootstrapNonce, null);
+        }
+
+        private bool HostDiscoveryMatches(PreflightRunContext context, string expectedSessionId,
+            string expectedBootstrapNonce, string expectedSuspensionIds)
+        {
             if (context == null || MyAPIGateway.Utilities == null || MyAPIGateway.Entities == null ||
                 context.GridId <= 0 || context.AgentCoreId <= 0 || context.ControllerId <= 0 || context.DepthCameraId <= 0 ||
                 !IsHexIdentity(context.DiscoveryRunId) || context.DiscoveryTick < 0 ||
@@ -3419,9 +3418,33 @@ namespace Voidwright.ServerPlugin
                 return DirectManeuverCommandAcceptancePolicy.MatchesFreshDiscoveryAdvance(
                     runMatch.Groups[1].Value, tick, liveFingerprint, grid.EntityId, controller.EntityId, core.EntityId,
                     context.DiscoveryRunId, context.DiscoveryTick, context.DiscoveryFingerprint,
-                    context.GridId, context.ControllerId, context.AgentCoreId);
+                    context.GridId, context.ControllerId, context.AgentCoreId) &&
+                    (expectedSuspensionIds == null ||
+                     HostDiscoverySuspensionsMatch(json, context.GridId, expectedSuspensionIds));
             }
             catch { return false; }
+        }
+
+        private static bool HostDiscoverySuspensionsMatch(string json, long gridId, string suspensionIds)
+        {
+            if (string.IsNullOrEmpty(json) || gridId <= 0 || string.IsNullOrEmpty(suspensionIds)) return false;
+            var expected = new HashSet<long>();
+            foreach (var value in suspensionIds.Split(','))
+            {
+                long id;
+                if (!long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out id) ||
+                    id <= 0 || !expected.Add(id)) return false;
+            }
+            var pattern = "\\\"gridEntityId\\\":" + gridId.ToString(CultureInfo.InvariantCulture) +
+                ",\\\"entityId\\\":([0-9]+),\\\"definitionType\\\":\\\"[^\\\"]*\\\",\\\"subtypeId\\\":\\\"[^\\\"]*\\\",\\\"typedKind\\\":\\\"suspension\\\"";
+            var actual = new HashSet<long>();
+            foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(json, pattern))
+            {
+                long id;
+                if (!long.TryParse(match.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out id) ||
+                    id <= 0 || !actual.Add(id)) return false;
+            }
+            return expected.Count > 0 && expected.SetEquals(actual);
         }
 
         private void ReadModHeartbeat()
@@ -3673,6 +3696,25 @@ namespace Voidwright.ServerPlugin
         private bool WriteModApproval()
         {
             if (!modHeartbeatFresh || modHeartbeat == null) return false;
+            var heartbeatKey = string.Join("\n", new[]
+            {
+                modHeartbeat.RunId, modHeartbeat.FixtureId, modHeartbeat.OperationId,
+                modHeartbeat.ContextSha256, modHeartbeat.Challenge, modHeartbeat.SessionId,
+                modHeartbeat.ControllerId.ToString(CultureInfo.InvariantCulture),
+                modHeartbeat.GridId.ToString(CultureInfo.InvariantCulture),
+                modHeartbeat.CameraId.ToString(CultureInfo.InvariantCulture),
+                modHeartbeat.SimulationTick.ToString(CultureInfo.InvariantCulture),
+                modHeartbeat.SensorScanTick.ToString(CultureInfo.InvariantCulture),
+                modHeartbeat.AgentCoreId.ToString(CultureInfo.InvariantCulture),
+                modHeartbeat.DiscoveryRunId,
+                modHeartbeat.DiscoveryTick.ToString(CultureInfo.InvariantCulture),
+                modHeartbeat.DiscoveryFingerprint
+            });
+            if (modApprovalStateKnown && modApprovalFilePresent &&
+                lastModApprovalHeartbeatKey == heartbeatKey) return true;
+            var nowUtc = DateTime.UtcNow;
+            if (nowUtc - lastModApprovalWriteAttemptUtc < TimeSpan.FromMilliseconds(250)) return false;
+            lastModApprovalWriteAttemptUtc = nowUtc;
             try
             {
                 var approval = new VoidwrightPreflightApproval
@@ -3684,7 +3726,7 @@ namespace Voidwright.ServerPlugin
                     SimulationTick = modHeartbeat.SimulationTick, SensorScanTick = modHeartbeat.SensorScanTick,
                     AgentCoreId = modHeartbeat.AgentCoreId, DiscoveryRunId = modHeartbeat.DiscoveryRunId,
                     DiscoveryTick = modHeartbeat.DiscoveryTick, DiscoveryFingerprint = modHeartbeat.DiscoveryFingerprint,
-                    PublishedUtc = DateTime.UtcNow
+                    PublishedUtc = nowUtc
                 };
                 var serialized = approval.Format();
                 using (var writer = MyAPIGateway.Utilities.WriteFileInWorldStorage(
@@ -3695,6 +3737,10 @@ namespace Voidwright.ServerPlugin
                     if (!string.Equals(serialized, reader.ReadToEnd(), StringComparison.Ordinal))
                         throw new InvalidOperationException("approval readback mismatch");
                 modHandshakeReason = "all host preflight checks passed; exact heartbeat was acknowledged";
+                modApprovalStateKnown = true;
+                modApprovalFilePresent = true;
+                lastModApprovalHeartbeatKey = heartbeatKey;
+                lastModApprovalRevokeAttemptUtc = DateTime.MinValue;
                 return true;
             }
             catch (Exception error)
@@ -3708,11 +3754,18 @@ namespace Voidwright.ServerPlugin
 
         private void RevokeModApproval()
         {
+            if (modApprovalStateKnown && !modApprovalFilePresent) return;
+            var nowUtc = DateTime.UtcNow;
+            if (nowUtc - lastModApprovalRevokeAttemptUtc < TimeSpan.FromMilliseconds(250)) return;
+            lastModApprovalRevokeAttemptUtc = nowUtc;
             try
             {
                 using (var writer = MyAPIGateway.Utilities.WriteFileInWorldStorage(
                            VoidwrightPreflightApproval.FileName, typeof(MySessionComponentBase)))
                     writer.Write(string.Empty);
+                modApprovalStateKnown = true;
+                modApprovalFilePresent = false;
+                lastModApprovalHeartbeatKey = null;
             }
             catch { /* The mod-side acknowledgement expires within one second. */ }
         }
